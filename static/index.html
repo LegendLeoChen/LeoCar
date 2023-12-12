@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <link />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+  <title>rpi-robot control</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    .btn-controller {
+      position: absolute;
+      left: 5%;
+      top: 40%;
+    }
+
+    #angleLabel {
+      position: absolute;
+      left: 5%;
+      top: 92%;
+      font-size: 20px;
+    }
+
+    .raspi-video {
+      position: absolute;
+      left: 5%;
+      top: 5%;
+      border: 5px solid #007cfc;
+    }
+
+    @media only screen and (max-width: 1000px) {
+      .btn-controller {
+        left: 50%;
+        top: 65%;
+        width: 50%;
+        transform: translate(-50%, -50%);
+      }
+
+      #angleLabel {
+        left: 30%;
+        top: 92%;
+        transform: translate(-50%, -50%);
+        font-size: 20px;
+      }
+
+      .raspi-video {
+        left: 50%;
+        top: 20%;
+        width: 90%;
+        transform: translate(-50%, -50%);
+      }
+    }
+  </style>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+
+<body id="container">
+  <script type="text/javascript">
+
+    /* Copyright (C) 2007 Richard Atterer, richardĀ©atterer.net
+       This program is free software; you can redistribute it and/or modify it
+       under the terms of the GNU General Public License, version 2. See the file
+       COPYING for details. */
+
+    var imageNr = 0; // Serial number of current image
+    var finished = new Array(); // References to img objects which have finished downloading
+    var paused = false;
+
+    function createImageLayer() {
+      var img = new Image();
+      img.style.position = "absolute";
+      img.style.zIndex = -1;
+      img.className = "raspi-video";
+      img.onload = imageOnload;
+      img.onclick = imageOnclick;
+      img.src = "http://192.168.43.212:8080/?action=snapshot&n=" + (++imageNr);
+      var webcam = document.getElementById("webcam");
+      webcam.insertBefore(img, webcam.firstChild);
+    }
+
+    // Two layers are always present (except at the very beginning), to avoid flicker
+    function imageOnload() {
+      this.style.zIndex = imageNr; // Image finished, bring to front!
+      while (1 < finished.length) {
+        var del = finished.shift(); // Delete old image(s) from document
+        del.parentNode.removeChild(del);
+      }
+      finished.push(this);
+      if (!paused) createImageLayer();
+    }
+
+    function imageOnclick() { // Clicking on the image will pause the stream
+      paused = !paused;
+      if (!paused) createImageLayer();
+    }
+
+  </script>
+
+  <body onload="createImageLayer();">
+    <div id="webcam"><noscript><img class="raspi-video" src="http://192.168.43.212:8080/?action=snapshot" /></noscript>
+    </div>
+    <!-- <img class="raspi-video" src="http://192.168.43.212:8080/?action=snapshot" width="640px" height="480px" ; /> -->
+
+  </body>
+  <label id="angleLabel">Angle:</label>
+  <canvas class="btn-controller" width="300" height="300"></canvas>
+  <!-- 遥杆 -->
+  <script>
+    // 显示角度的label
+    const label = document.getElementById('angleLabel');
+    // 获取 Canvas 元素
+    const canvas = document.getElementsByClassName('btn-controller')[0];
+    const ctx = canvas.getContext('2d');
+
+    // 大圆半径和小圆半径
+    const bigRadius = 150;
+    const smallRadius = 55;
+
+    // 小圆的初始位置
+    let smallCircleX = canvas.width / 2;
+    let smallCircleY = canvas.height / 2;
+
+    // 角度
+    let angle = 0;
+    let last_angle = 0;
+
+    // 绘制函数
+    function draw() {
+      // 清空 Canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = '#007cfc';
+      ctx.fillStyle = '#007fff';
+      // 绘制大圆
+      ctx.beginPath();
+      ctx.arc(canvas.width / 2, canvas.height / 2, bigRadius, 0, 2 * Math.PI);
+      ctx.stroke();
+
+      // 绘制小圆
+      ctx.beginPath();
+      ctx.arc(smallCircleX, smallCircleY, smallRadius, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+
+    // 更新小圆的位置
+    function updateSmallCircle(x, y) {
+      // 计算小圆与大圆的距离
+      const distance = Math.sqrt((x - canvas.width / 2) ** 2 + (y - canvas.height / 2) ** 2);
+
+      // 小圆与大圆切
+      const angle = Math.atan2(y - canvas.height / 2, x - canvas.width / 2);
+      smallCircleX = canvas.width / 2 + (bigRadius - smallRadius) * Math.cos(angle);
+      smallCircleY = canvas.height / 2 + (bigRadius - smallRadius) * Math.sin(angle);
+
+      // 重新绘制
+      draw();
+      // 返回实际角度（上半周为正）
+      return -Math.round(Math.atan2(smallCircleY - canvas.height / 2, smallCircleX - canvas.width / 2) * 180 / Math.PI);
+    }
+
+    // 触摸事件处理
+    let isDragging = false;
+
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const x = e.touches[0].clientX;
+      const y = e.touches[0].clientY;
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = x - rect.left;
+      const mouseY = y - rect.top;
+      angle = updateSmallCircle(mouseX, mouseY);
+      isDragging = true;
+    });
+
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      if (isDragging) {
+        const x = e.touches[0].clientX;
+        const y = e.touches[0].clientY;
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = x - rect.left;
+        const mouseY = y - rect.top;
+        angle = updateSmallCircle(mouseX, mouseY);
+        if (Math.abs(last_angle - angle) > 5) {
+          // 发送 AJAX 请求
+          $.ajax({
+            url: "http://192.168.43.127:5000/position",
+            type: "POST",
+            data: JSON.stringify({ angle: angle }),
+            contentType: "application/json",
+            dataType: 'json',
+            success: function (data) {
+              console.log(data);
+            }
+          });
+          last_angle = angle;
+          label.textContent = `Angle: ${angle}°`;
+        }
+      }
+    });
+
+    canvas.addEventListener('touchend', () => {
+      isDragging = false;
+    });
+
+    // 初始绘制
+    draw();
+  </script>
+
+</body>
+
+</html>
