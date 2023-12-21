@@ -21,6 +21,9 @@
 
 #define resolution  10    //使用PWM占空比的分辨率，占空比最大可写2^10-1=1023
 
+#define trigPin  22
+#define echoPin  23
+
 int car_speed = 100;
 char state = 'e';
 /**************************************************************************
@@ -132,6 +135,25 @@ void control(char command, int carspeed){
   else if(command=='f')
     Set_Pwm(carspeed/2.0, -carspeed/2.0); //原地转
 }
+void ultrasound(){
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  //计算超声波回波的时间
+  long duration = pulseIn(echoPin, HIGH);
+  
+  //计算物体的距离(cm)
+  float distance = duration * 0.034 / 2;
+  if(distance < 20)
+    state = 'e';
+  //输出物体的距离
+  Serial.print("distance:");
+  Serial.println(distance);
+  delay(100);
+}
 /*********************************setup**********************************/
 void setup()
 {
@@ -142,6 +164,9 @@ void setup()
     pinMode(PWMA, OUTPUT);         //TB6612控制引脚，电机PWM
     pinMode(PWMB, OUTPUT);         //TB6612控制引脚，电机PWM
     pinMode(STBY, OUTPUT);
+
+    pinMode(trigPin, OUTPUT);     //超声波
+    pinMode(echoPin, INPUT);
 
     digitalWrite(IN1, LOW);       //TB6612控制引脚拉低
     digitalWrite(IN2, LOW);       //TB6612控制引脚拉低
@@ -177,5 +202,6 @@ void loop()
         }
       lastMsg = now;//刷新上一次发送数据的时间
     }
+    ultrasound();
     control(state, car_speed);
 }
