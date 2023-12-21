@@ -10,3 +10,7 @@ webcam_video.py：读取树莓派摄像头上传的mjpg-streamer的视频流（I
 web_control.py：博客页面/h5页面 通过局域网和 PC/树莓派 上的python flask服务器交互，控制遥杆发送数据到服务器。
 
 static：python flask服务器上的web应用，可访问视频流，通过交互组件进行小车的角度控制信息的传输。
+
+Motor_Control_ESP32：利用ESP32实现控制小车，可通过低功耗蓝牙BLE远程控制小车。
+
+record：过程记录和总结。
