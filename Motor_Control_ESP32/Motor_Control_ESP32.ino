@@ -120,22 +120,22 @@ void Set_Pwm(int moto1, int moto2)
   ledcWrite(pwm_Channel_1, abs(moto1));
   ledcWrite(pwm_Channel_2, abs(moto2));
 }
-void control(char command, int carspeed){
+void control(char command, int carspeed){     //电机控制
   if(command=='a'){
     Set_Pwm(carspeed, carspeed);      //前
   }
   else if(command=='b')
     Set_Pwm(-carspeed, -carspeed);    //后
   else if(command=='c')
-    Set_Pwm(carspeed*0.8, carspeed);  //左
+    Set_Pwm(carspeed*0.75, carspeed);  //左
   else if(command=='d')
-    Set_Pwm(carspeed, carspeed*0.8);  //右
+    Set_Pwm(carspeed, carspeed*0.75);  //右
   else if(command=='e')
     Set_Pwm(0, 0);                      //停
   else if(command=='f')
     Set_Pwm(carspeed/2.0, -carspeed/2.0); //原地转
 }
-void ultrasound(){
+void ultrasound(){      //超声波
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
   digitalWrite(trigPin, HIGH);
@@ -147,8 +147,8 @@ void ultrasound(){
   
   //计算物体的距离(cm)
   float distance = duration * 0.034 / 2;
-  if(distance < 20)
-    state = 'e';
+  if(distance < 20 && (state != 'f' && state != 'b'))
+    state = 'e';         //除了倒车、转圈都停止
   //输出物体的距离
   Serial.print("distance:");
   Serial.println(distance);
