@@ -111,6 +111,8 @@
   <canvas class="btn-controller" width="300" height="300"></canvas>
   <!-- 遥杆 -->
   <script>
+    // 服务器地址
+    const url = "http://192.168.43.127:5000/position"
     // 显示角度的label
     const label = document.getElementById('angleLabel');
     // 获取 Canvas 元素
@@ -185,12 +187,12 @@
         const mouseX = x - rect.left;
         const mouseY = y - rect.top;
         angle = updateSmallCircle(mouseX, mouseY);
-        if (Math.abs(last_angle - angle) > 5) {
+        if(Math.abs(last_angle - angle) > 5){
           // 发送 AJAX 请求
           $.ajax({
-            url: "http://192.168.43.127:5000/position",
+            url: url,
             type: "POST",
-            data: JSON.stringify({ angle: angle }),
+            data: JSON.stringify({ angle: Math.sin((angle - last_angle) * Math.PI / 180) }),
             contentType: "application/json",
             dataType: 'json',
             success: function (data) {
@@ -205,6 +207,16 @@
 
     canvas.addEventListener('touchend', () => {
       isDragging = false;
+      $.ajax({
+        url: url,
+        type: "POST",
+        data: JSON.stringify({ angle: 0 }),
+        contentType: "application/json",
+        dataType: 'json',
+        success: function (data) {
+          console.log(data);
+        }
+      });
     });
 
     // 初始绘制

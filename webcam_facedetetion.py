@@ -26,7 +26,7 @@ while True:
 
     # 将帧转换为灰度图像
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
+    print(gray.shape[1])
     # 检测人脸
     faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5)
 

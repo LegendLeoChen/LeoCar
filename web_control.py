@@ -19,7 +19,7 @@ def index():
 def send_button_position():  # put application's code here
     args = request.json
     try:
-        print(f'angle = {args["angle"]}')
+        print(f'angle = {args["angle"]:.2f}')
         return jsonify({"passed": True, "message": "成功发送位置", "data": f'angle={args["angle"]}'})
     except:
         return jsonify({"passed": False, "message": "错误", "data": None})
